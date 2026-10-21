@@ -9,6 +9,7 @@ import {
   gotDefaultBrowserStatus,
 } from './state/actions.js'
 import { dispatch } from './state/store.js'
+import hideOnBlur from './utils/hide-on-blur.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -89,6 +90,8 @@ async function createWindows(): Promise<void> {
     title: 'Browserosaurus',
     titleBarStyle: 'hidden',
     transparent: true,
+    // Take keyboard focus without activating the app and switching macOS Spaces.
+    type: 'panel',
     vibrancy: 'popover',
     visualEffectState: 'active',
     webPreferences: {
@@ -103,11 +106,13 @@ async function createWindows(): Promise<void> {
 
   pickerWindow.setWindowButtonVisibility(false)
 
-  pickerWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-
-  pickerWindow.on('hide', () => {
-    pickerWindow?.hide()
+  pickerWindow.setVisibleOnAllWorkspaces(true, {
+    // The packaged app is already an LSUIElement and its Dock icon is hidden.
+    skipTransformProcessType: true,
+    visibleOnFullScreen: true,
   })
+
+  hideOnBlur(pickerWindow)
 
   pickerWindow.on('close', (event_) => {
     event_.preventDefault()
@@ -118,10 +123,6 @@ async function createWindows(): Promise<void> {
     if (pickerWindow) {
       dispatch(changedPickerWindowBounds(pickerWindow.getBounds()))
     }
-  })
-
-  pickerWindow.on('blur', () => {
-    pickerWindow?.hide()
   })
 
   if (PREFS_WINDOW_VITE_DEV_SERVER_URL && PICKER_WINDOW_VITE_DEV_SERVER_URL) {
